@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define MAX 80
+#define MAX 1024
 #define PORT 8080
 #define SA struct sockaddr
 
@@ -102,13 +102,16 @@ void func(int connfd)
             delete(name);
         } else if (strcmp(command, "stampare") == 0) {
             Rubrica* current = head;
+            bzero(buff, MAX);
             while (current != NULL) {
-                bzero(buff, MAX);
-                sprintf(buff, "Nome: %s - numero: %d", current->name, current->number);
-                write(connfd, buff, sizeof(buff));
+                char temp[MAX];
+                sprintf(temp, "Nome: %s - numero: %d", current->name, current->number);
+                strcat(buff, temp);
+                strcat(buff, "\n");
                 current = current->next;
-                bzero(buff, MAX);
             }
+            write(connfd, buff, sizeof(buff));
+            bzero(buff, MAX);
         } else if (strcmp(command, "modifica") == 0) {
             read(connfd, buff, sizeof(buff));
             char* name = (char *) &buff;
