@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define MAX 80
 #define PORT 8080
@@ -49,8 +50,8 @@ void addContact(char* name, int number)
 {
     Rubrica* new = (Rubrica*) malloc(sizeof(Rubrica));
     Rubrica* last_node = head;
-
-    new->name = name;
+    new->name = malloc(strlen(name) + 1);
+    strcpy(new->name, name);
     new->number = number;
     new->next = NULL;
 
@@ -73,7 +74,7 @@ char* getList() {
 
 void func(int connfd)
 {
-    for (;;) {
+    while (1) {
         char command[MAX];
         char buff[MAX];
         char buffN[MAX];
@@ -81,13 +82,17 @@ void func(int connfd)
         bzero(buff, MAX);
         read(connfd, command, sizeof(buff));
 
+        if (command[0] == 0) {
+            printf("\nClient Exit...");
+            break;
+        }
         printf("From client: %s\t", command);
         if (strcmp(command, "inserire") == 0) {
             read(connfd, buff, sizeof(buff));
             char* name = (char *) &buff;
-            printf("Nome: %s\n", buff);
+            printf("\nNome: %s", buff);
             read(connfd, buffN, sizeof(buffN));
-            printf("Numero: %s\n", buffN);
+            printf("\nNumero: %s\n", buffN);
             int number = atoi(buffN);
             addContact(name, number);
         } else if (strcmp(command, "cancella") == 0) {
@@ -98,20 +103,26 @@ void func(int connfd)
         } else if (strcmp(command, "stampare") == 0) {
             Rubrica* current = head;
             while (current != NULL) {
-                char* name = current->name;
-                int i = 0;
-                while (name[i] != 0) {
-                    buff[i] = name[i];
-                    i++;
-                }
+                bzero(buff, MAX);
+                sprintf(buff, "Nome: %s - numero: %d", current->name, current->number);
                 write(connfd, buff, sizeof(buff));
                 current = current->next;
                 bzero(buff, MAX);
             }
-        }
-        write(connfd, buff, sizeof(buff));
-        if (strncmp("exit", buff, 4) == 0) {
-            printf("Server Exit...\n");
+        } else if (strcmp(command, "modifica") == 0) {
+            read(connfd, buff, sizeof(buff));
+            char* name = (char *) &buff;
+            printf("Nome: %s\n", buff);
+            Rubrica* contact = search(name);
+            if (contact == NULL) {
+                write(connfd, "Contatto non trovato", sizeof("Contatto non trovato"));
+            } else {
+                read(connfd, buff, sizeof(buff));
+                int number = atoi(buff);
+                contact->number = number;
+            }
+        } else if (strcmp(command, "chiusura") == 0) {
+            printf("\nClient Exit...\n");
             break;
         }
     }
@@ -119,7 +130,8 @@ void func(int connfd)
 
 int main(void)
 {
-    int sockfd, connfd, len;
+    int sockfd, connfd;
+    socklen_t len;
     struct sockaddr_in servaddr, cli;
 
     // socket create and verification
@@ -144,7 +156,6 @@ int main(void)
     }
     else
         printf("Socket successfully binded..\n");
-
     // Now server is ready to listen and verification
     if ((listen(sockfd, 5)) != 0) {
         printf("Listen failed...\n");
@@ -154,17 +165,17 @@ int main(void)
         printf("Server listening..\n");
     len = sizeof(cli);
 
-    // Accept the data packet from client and verification
-    connfd = accept(sockfd, (SA*)&cli, &len);
-    if (connfd < 0) {
-        printf("server accept failed...\n");
-        exit(0);
+    while (1) {
+        connfd = accept(sockfd, (SA *) &cli, &len);
+        if (connfd < 0) {
+            printf("server accept failed... retrying\n");
+            sleep(1);
+            continue;
+        } else printf("\nserver accept the client...\n");
+        // Function for chatting between client and server
+        func(connfd);
+        // After chatting close the socket
+        close(connfd);
     }
-    else
-        printf("server accept the client...\n");
-
-    // Function for chatting between client and server
-    func(connfd);
-    // After chatting close the socket
     close(sockfd);
 }
