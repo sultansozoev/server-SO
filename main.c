@@ -35,12 +35,14 @@ void delete(const char* name) {
     }
 }
 
-Rubrica* search(const char* name)
+Rubrica* search(const char* name, int number)
 {
     Rubrica* current = head;
     while (current != NULL) {
-        if (current->name == name)
+        if (strcmp(name, current->name) == 0) {
+            current->number = number;
             return current;
+        }
         current = current->next;
     }
     return NULL;
@@ -61,15 +63,6 @@ void addContact(char* name, int number)
     }
     while (last_node->next != NULL) last_node = last_node->next;
     last_node->next = new;
-}
-
-char* getList() {
-    Rubrica* current = head;
-    char* list;
-    while (current != NULL) {
-        current = current->next;
-    }
-    return list;
 }
 
 void func(int connfd)
@@ -114,15 +107,15 @@ void func(int connfd)
             bzero(buff, MAX);
         } else if (strcmp(command, "modifica") == 0) {
             read(connfd, buff, sizeof(buff));
-            char* name = (char *) &buff;
+            char *name = (char *) &buff;
             printf("Nome: %s\n", buff);
-            Rubrica* contact = search(name);
+            read(connfd, buffN, sizeof(buffN));
+            int number = atoi(buffN);
+            Rubrica* contact = search(name, number);
             if (contact == NULL) {
                 write(connfd, "Contatto non trovato", sizeof("Contatto non trovato"));
             } else {
-                read(connfd, buff, sizeof(buff));
-                int number = atoi(buff);
-                contact->number = number;
+                write(connfd, "Contatto trovato", sizeof("Contatto trovato"));
             }
         } else if (strcmp(command, "chiusura") == 0) {
             printf("\nClient Exit...\n");
