@@ -15,22 +15,25 @@
 typedef struct Rubrica {
     int number;
     char* name;
-    struct Rubrica * next;
+    struct Rubrica* next;
 } Rubrica;
 Rubrica *head;
 
 void delete(const char* name) {
-    if (head->name == name) {
-        head = head->next;
-    }
     Rubrica* current = head;
-    Rubrica* previous = head;
+    Rubrica* previous = NULL;
+
     while (current != NULL) {
-        if (current->name == name) {
-            previous->next = current->next;
+        if (strcmp(current->name, name) == 0) {
+            if (previous == NULL) {
+                head = current->next;
+            } else {
+                previous->next = current->next;
+            }
             free(current);
             return;
         }
+        previous = current;
         current = current->next;
     }
 }
@@ -73,6 +76,7 @@ void func(int connfd)
         char buffN[MAX];
         bzero(command, MAX);
         bzero(buff, MAX);
+        bzero(buffN, MAX);
         read(connfd, command, sizeof(buff));
 
         if (command[0] == 0) {
@@ -88,14 +92,16 @@ void func(int connfd)
             printf("\nNumero: %s\n", buffN);
             int number = atoi(buffN);
             addContact(name, number);
+            bzero(buff, MAX);
+            bzero(buffN, MAX);
         } else if (strcmp(command, "cancella") == 0) {
             read(connfd, buff, sizeof(buff));
             char* name = (char *) &buff;
             printf("Nome: %s\n", buff);
             delete(name);
+            bzero(buff, MAX);
         } else if (strcmp(command, "stampare") == 0) {
             Rubrica* current = head;
-            bzero(buff, MAX);
             while (current != NULL) {
                 char temp[MAX];
                 sprintf(temp, "Nome: %s - numero: %d", current->name, current->number);
@@ -104,7 +110,6 @@ void func(int connfd)
                 current = current->next;
             }
             write(connfd, buff, sizeof(buff));
-            bzero(buff, MAX);
         } else if (strcmp(command, "modifica") == 0) {
             read(connfd, buff, sizeof(buff));
             char *name = (char *) &buff;
