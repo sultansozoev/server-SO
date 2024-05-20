@@ -1,12 +1,10 @@
 #include <stdio.h>
-#include <netdb.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
-#include <errno.h>
+#include <pthread.h>
 
 #define MAX 1024
 #define PORT 8080
@@ -18,6 +16,43 @@ typedef struct Rubrica {
     struct Rubrica* next;
 } Rubrica;
 Rubrica *head;
+
+typedef struct User {
+    char* username;
+    char* password;
+    struct User* next;
+} User;
+User *users = NULL;
+
+void addUser(char* username, char* password)
+{
+    User* new = (User*) malloc(sizeof(User));
+    User* last_node = users;
+    new->username = malloc(strlen(username) + 1);
+    new->password = malloc(strlen(password) + 1);
+    strcpy(new->username, username);
+    strcpy(new->password, password);
+    new->next = NULL;
+
+    if (users == NULL) {
+        users = new;
+        return;
+    }
+    while (last_node->next != NULL) last_node = last_node->next;
+    last_node->next = new;
+}
+
+User* findUser(char* username)
+{
+    User* current = users;
+    while (current != NULL) {
+        if (strcmp(username, current->username) == 0) {
+            return current;
+        }
+        current = current->next;
+    }
+    return NULL;
+}
 
 void delete(const char* name) {
     Rubrica* current = head;
@@ -70,6 +105,10 @@ void addContact(char* name, int number)
 
 void func(int connfd)
 {
+    char username[MAX];
+    char password[MAX];
+    int authenticated = 0;
+
     while (1) {
         char command[MAX];
         char buff[MAX];
@@ -84,7 +123,29 @@ void func(int connfd)
             break;
         }
         printf("From client: %s\t", command);
-        if (strcmp(command, "inserire") == 0) {
+        if (strcmp(command, "accedere") == 0) {
+            bzero(username, MAX);
+            read(connfd, username, sizeof(username));
+
+            bzero(password, MAX);
+            read(connfd, password, sizeof(password));
+
+            User* user = findUser(username);
+            if (user != NULL && strcmp(password, user->password) == 0) {
+                authenticated = 1;
+                printf("%s authenticated successfully\n", username);
+                write(connfd, "User authenticated successfully", sizeof("User authenticated successfully"));
+            } else {
+                printf("Authentication failed for client\n");
+                write(connfd, "Authentication failed", sizeof("Authentication failed"));
+                continue;
+            }
+        } else if (strcmp(command, "inserire") == 0) {
+            if (!authenticated) {
+                write(connfd, "Authentication required", sizeof("Authentication required"));
+                continue;
+            }
+            write(connfd, "User authenticated", sizeof("User authenticated"));
             read(connfd, buff, sizeof(buff));
             char* name = (char *) &buff;
             printf("\nNome: %s", buff);
@@ -94,7 +155,26 @@ void func(int connfd)
             addContact(name, number);
             bzero(buff, MAX);
             bzero(buffN, MAX);
+        } else if (strcmp(command, "registrare") == 0) {
+            bzero(username, MAX);
+            read(connfd, username, sizeof(username));
+            bzero(password, MAX);
+            read(connfd, password, sizeof(password));
+
+            if (findUser(username) != NULL) {
+                printf("Username already exists\n");
+                write(connfd, "Username already exists", sizeof("Username already exists"));
+                continue;
+            }
+            addUser(username, password);
+            printf("User registered successfully\n");
+            write(connfd, "User registered successfully", sizeof("User registered successfully"));
         } else if (strcmp(command, "cancella") == 0) {
+            if (!authenticated) {
+                write(connfd, "Authentication required", sizeof("Authentication required"));
+                continue;
+            }
+            write(connfd, "User authenticated", sizeof("User authenticated"));
             read(connfd, buff, sizeof(buff));
             char* name = (char *) &buff;
             printf("Nome: %s\n", buff);
@@ -111,6 +191,11 @@ void func(int connfd)
             }
             write(connfd, buff, sizeof(buff));
         } else if (strcmp(command, "modifica") == 0) {
+            if (!authenticated) {
+                write(connfd, "Authentication required", sizeof("Authentication required"));
+                continue;
+            }
+            write(connfd, "User authenticated", sizeof("User authenticated"));
             read(connfd, buff, sizeof(buff));
             char *name = (char *) &buff;
             printf("Nome: %s\n", buff);
@@ -129,13 +214,22 @@ void func(int connfd)
     }
 }
 
+void *clientHandler(void *arg) {
+    int connfd = *((int *)arg);
+    free(arg);
+
+    func(connfd);
+
+    close(connfd);
+    return NULL;
+}
+
 int main(void)
 {
-    int sockfd, connfd;
+    int sockfd;
     socklen_t len;
     struct sockaddr_in servaddr, cli;
 
-    // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
         printf("socket creation failed...\n");
@@ -145,19 +239,17 @@ int main(void)
         printf("Socket successfully created..\n");
     bzero(&servaddr, sizeof(servaddr));
 
-    // assign IP, PORT
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(PORT);
 
-    // Binding newly created socket to given IP and verification
     if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) {
         printf("socket bind failed...\n");
         exit(0);
     }
     else
         printf("Socket successfully binded..\n");
-    // Now server is ready to listen and verification
+
     if ((listen(sockfd, 5)) != 0) {
         printf("Listen failed...\n");
         exit(0);
@@ -167,16 +259,18 @@ int main(void)
     len = sizeof(cli);
 
     while (1) {
-        connfd = accept(sockfd, (SA *) &cli, &len);
-        if (connfd < 0) {
+        int *connfd = malloc(sizeof(int));
+        *connfd = accept(sockfd, (SA *) &cli, &len);
+        if (*connfd < 0) {
             printf("server accept failed... retrying\n");
             sleep(1);
             continue;
         } else printf("\nserver accept the client...\n");
-        // Function for chatting between client and server
-        func(connfd);
-        // After chatting close the socket
-        close(connfd);
+
+        pthread_t clientThread;
+        if (pthread_create(&clientThread, NULL, clientHandler, connfd) != 0) {
+            printf("Failed to create thread\n");
+            return 1;
+        }
     }
-    close(sockfd);
 }
