@@ -54,7 +54,19 @@ User* findUser(char* username)
     return NULL;
 }
 
-void delete(const char* name) {
+Rubrica * findContact(char* name)
+{
+    Rubrica* current = head;
+    while (current != NULL) {
+        if (strcmp(name, current->name) == 0) {
+            return current;
+        }
+        current = current->next;
+    }
+    return NULL;
+}
+
+Rubrica* delete(const char* name) {
     Rubrica* current = head;
     Rubrica* previous = NULL;
 
@@ -66,14 +78,15 @@ void delete(const char* name) {
                 previous->next = current->next;
             }
             free(current);
-            return;
+            return current;
         }
         previous = current;
         current = current->next;
     }
+    return NULL;
 }
 
-Rubrica* search(const char* name, int number)
+Rubrica* changeNumber(const char* name, int number)
 {
     Rubrica* current = head;
     while (current != NULL) {
@@ -148,6 +161,13 @@ void func(int connfd)
             write(connfd, "User authenticated", sizeof("User authenticated"));
             read(connfd, buff, sizeof(buff));
             char* name = (char *) &buff;
+            if (findContact(name) != NULL) {
+                printf("Contact already exists\n");
+                write(connfd, "Contact already exists", sizeof("Contact already exists"));
+                continue;
+            } else {
+                write(connfd, "Contact available", sizeof("Contact available"));
+            }
             printf("\nNome: %s", buff);
             read(connfd, buffN, sizeof(buffN));
             printf("\nNumero: %s\n", buffN);
@@ -178,8 +198,13 @@ void func(int connfd)
             read(connfd, buff, sizeof(buff));
             char* name = (char *) &buff;
             printf("Nome: %s\n", buff);
-            delete(name);
+            Rubrica* contact = delete(name);
             bzero(buff, MAX);
+            if (contact == NULL) {
+                write(connfd, "Contatto non trovato", sizeof("Contatto non trovato"));
+            } else {
+                write(connfd, "Contatto trovato", sizeof("Contatto trovato"));
+            }
         } else if (strcmp(command, "stampare") == 0) {
             Rubrica* current = head;
             while (current != NULL) {
@@ -201,7 +226,7 @@ void func(int connfd)
             printf("Nome: %s\n", buff);
             read(connfd, buffN, sizeof(buffN));
             int number = atoi(buffN);
-            Rubrica* contact = search(name, number);
+            Rubrica* contact = changeNumber(name, number);
             if (contact == NULL) {
                 write(connfd, "Contatto non trovato", sizeof("Contatto non trovato"));
             } else {
@@ -214,7 +239,8 @@ void func(int connfd)
     }
 }
 
-void *clientHandler(void *arg) {
+void *clientHandler(void *arg)
+{
     int connfd = *((int *)arg);
     free(arg);
 
