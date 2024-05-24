@@ -10,12 +10,12 @@
 #define PORT 8080
 #define SA struct sockaddr
 
-typedef struct Rubrica {
+typedef struct Contact {
     int number;
     char* name;
-    struct Rubrica* next;
-} Rubrica;
-Rubrica *head;
+    struct Contact* next;
+} Contact;
+Contact *head;
 
 typedef struct User {
     char* username;
@@ -54,9 +54,9 @@ User* findUser(char* username)
     return NULL;
 }
 
-Rubrica * findContact(char* name)
+Contact * findContact(char* name)
 {
-    Rubrica* current = head;
+    Contact* current = head;
     while (current != NULL) {
         if (strcmp(name, current->name) == 0) {
             return current;
@@ -66,9 +66,9 @@ Rubrica * findContact(char* name)
     return NULL;
 }
 
-Rubrica* delete(const char* name) {
-    Rubrica* current = head;
-    Rubrica* previous = NULL;
+Contact* delete(const char* name) {
+    Contact* current = head;
+    Contact* previous = NULL;
 
     while (current != NULL) {
         if (strcmp(current->name, name) == 0) {
@@ -86,9 +86,9 @@ Rubrica* delete(const char* name) {
     return NULL;
 }
 
-Rubrica* changeNumber(const char* name, int number)
+Contact* changeNumber(const char* name, int number)
 {
-    Rubrica* current = head;
+    Contact* current = head;
     while (current != NULL) {
         if (strcmp(name, current->name) == 0) {
             current->number = number;
@@ -101,8 +101,8 @@ Rubrica* changeNumber(const char* name, int number)
 
 void addContact(char* name, int number)
 {
-    Rubrica* new = (Rubrica*) malloc(sizeof(Rubrica));
-    Rubrica* last_node = head;
+    Contact* new = (Contact*) malloc(sizeof(Contact));
+    Contact* last_node = head;
     new->name = malloc(strlen(name) + 1);
     strcpy(new->name, name);
     new->number = number;
@@ -116,7 +116,7 @@ void addContact(char* name, int number)
     last_node->next = new;
 }
 
-void func(int connfd)
+void commands(int connfd)
 {
     char username[MAX];
     char password[MAX];
@@ -198,7 +198,7 @@ void func(int connfd)
             read(connfd, buff, sizeof(buff));
             char* name = (char *) &buff;
             printf("Nome: %s\n", buff);
-            Rubrica* contact = delete(name);
+            Contact* contact = delete(name);
             bzero(buff, MAX);
             if (contact == NULL) {
                 write(connfd, "Contatto non trovato", sizeof("Contatto non trovato"));
@@ -206,7 +206,7 @@ void func(int connfd)
                 write(connfd, "Contatto trovato", sizeof("Contatto trovato"));
             }
         } else if (strcmp(command, "stampare") == 0) {
-            Rubrica* current = head;
+            Contact* current = head;
             while (current != NULL) {
                 char temp[MAX];
                 sprintf(temp, "Nome: %s - numero: %d", current->name, current->number);
@@ -226,7 +226,7 @@ void func(int connfd)
             printf("Nome: %s\n", buff);
             read(connfd, buffN, sizeof(buffN));
             int number = atoi(buffN);
-            Rubrica* contact = changeNumber(name, number);
+            Contact* contact = changeNumber(name, number);
             if (contact == NULL) {
                 write(connfd, "Contatto non trovato", sizeof("Contatto non trovato"));
             } else {
@@ -243,9 +243,7 @@ void *clientHandler(void *arg)
 {
     int connfd = *((int *)arg);
     free(arg);
-
-    func(connfd);
-
+    commands(connfd);
     close(connfd);
     return NULL;
 }
