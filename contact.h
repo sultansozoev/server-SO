@@ -4,16 +4,16 @@
 #define MAX 1024
 
 typedef struct Contact {
-    int number;
+    char* number;
     char* name;
     struct Contact* next;
 } Contact;
 Contact *contacts;
 
-void addContact(char*, int);
+void addContact(char*, char*);
 Contact* deleteContact(const char*);
 Contact* findContact(char*);
-Contact* changeContactNumber(const char*, int);
+Contact* changeContactNumber(const char*, char*);
 void printContact(char *);
 
 #endif

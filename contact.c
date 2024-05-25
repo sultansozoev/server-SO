@@ -5,7 +5,7 @@
 
 Contact *contacts = NULL;
 
-void addContact(char* name, int number)
+void addContact(char* name, char* number)
 {
     Contact* newContact = (Contact*) malloc(sizeof(Contact));
     if (!newContact) {
@@ -14,14 +14,15 @@ void addContact(char* name, int number)
     }
 
     newContact->name = malloc(strlen(name) + 1);
-    if (!newContact->name) {
-        perror("Failed to allocate memory for contact name");
+    newContact->number = malloc(strlen(number) + 1);
+    if (!newContact->name || !newContact->number) {
+        perror("Failed to allocate memory for contact name or number");
         free(newContact);
         exit(EXIT_FAILURE);
     }
 
     strcpy(newContact->name, name);
-    newContact->number = number;
+    strcpy(newContact->number, number);
     newContact->next = NULL;
 
     if (contacts == NULL)
@@ -53,7 +54,7 @@ Contact* deleteContact(const char* name)
     return NULL;
 }
 
-Contact * findContact(char* name)
+Contact* findContact(char* name)
 {
     Contact* current = contacts;
     while (current != NULL) {
@@ -64,12 +65,12 @@ Contact * findContact(char* name)
     return NULL;
 }
 
-Contact* changeContactNumber(const char* name, int number)
+Contact* changeContactNumber(const char* name, char* number)
 {
     Contact* current = contacts;
     while (current != NULL) {
         if (strcmp(name, current->name) == 0) {
-            current->number = number;
+            strcpy(current->number, number);
             return current;
         }
         current = current->next;
@@ -82,7 +83,7 @@ void printContact(char* buff)
     Contact* current = contacts;
     while (current != NULL) {
         char temp[MAX];
-        sprintf(temp, "Nome: %s - numero: %d", current->name, current->number);
+        sprintf(temp, "Nome: %s - numero: %s", current->name, current->number);
         strcat(buff, temp);
         strcat(buff, "\n");
         current = current->next;

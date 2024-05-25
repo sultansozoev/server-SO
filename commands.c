@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdlib.h>
 
 void processCommands(int connfd)
 {
@@ -59,7 +58,7 @@ void processCommands(int connfd)
             printf("\nNome: %s", buff);
             read(connfd, buffN, sizeof(buffN));
             printf("\nNumero: %s\n", buffN);
-            int number = atoi(buffN);
+            char* number = buffN;
             addContact(name, number);
             bzero(buff, MAX);
             bzero(buffN, MAX);
@@ -106,7 +105,7 @@ void processCommands(int connfd)
             char *name = (char *) &buff;
             printf("Nome: %s\n", buff);
             read(connfd, buffN, sizeof(buffN));
-            int number = atoi(buffN);
+            char* number = buffN;
             Contact* contact = changeContactNumber(name, number);
             if (contact == NULL) {
                 write(connfd, "Contatto non trovato", sizeof("Contatto non trovato"));
