@@ -26,7 +26,7 @@ Questo progetto è un semplice server TCP multi-thread scritto in C che supporta
    ```
    E poi utilizza il comando seguente:
    ```bash
-   gcc -o server main.c server.c commands.c users.c contacts.c -pthread
+   gcc -o server main.c server.c commands.c user.c contact.c -pthread
    ```
 
 ### Utilizzo
