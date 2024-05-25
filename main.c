@@ -1,3 +1,6 @@
+#include "contact.h"
+#include "user.h"
+
 #include <stdio.h>
 #include <netinet/in.h>
 #include <stdlib.h>
@@ -9,112 +12,6 @@
 #define MAX 1024
 #define PORT 8080
 #define SA struct sockaddr
-
-typedef struct Contact {
-    int number;
-    char* name;
-    struct Contact* next;
-} Contact;
-Contact *head;
-
-typedef struct User {
-    char* username;
-    char* password;
-    struct User* next;
-} User;
-User *users = NULL;
-
-void addUser(char* username, char* password)
-{
-    User* new = (User*) malloc(sizeof(User));
-    User* last_node = users;
-    new->username = malloc(strlen(username) + 1);
-    new->password = malloc(strlen(password) + 1);
-    strcpy(new->username, username);
-    strcpy(new->password, password);
-    new->next = NULL;
-
-    if (users == NULL) {
-        users = new;
-        return;
-    }
-    while (last_node->next != NULL) last_node = last_node->next;
-    last_node->next = new;
-}
-
-User* findUser(char* username)
-{
-    User* current = users;
-    while (current != NULL) {
-        if (strcmp(username, current->username) == 0) {
-            return current;
-        }
-        current = current->next;
-    }
-    return NULL;
-}
-
-Contact * findContact(char* name)
-{
-    Contact* current = head;
-    while (current != NULL) {
-        if (strcmp(name, current->name) == 0) {
-            return current;
-        }
-        current = current->next;
-    }
-    return NULL;
-}
-
-Contact* delete(const char* name) {
-    Contact* current = head;
-    Contact* previous = NULL;
-
-    while (current != NULL) {
-        if (strcmp(current->name, name) == 0) {
-            if (previous == NULL) {
-                head = current->next;
-            } else {
-                previous->next = current->next;
-            }
-            free(current);
-            return current;
-        }
-        previous = current;
-        current = current->next;
-    }
-    return NULL;
-}
-
-Contact* changeNumber(const char* name, int number)
-{
-    Contact* current = head;
-    while (current != NULL) {
-        if (strcmp(name, current->name) == 0) {
-            current->number = number;
-            return current;
-        }
-        current = current->next;
-    }
-    return NULL;
-}
-
-void addContact(char* name, int number)
-{
-    Contact* new = (Contact*) malloc(sizeof(Contact));
-    Contact* last_node = head;
-    new->name = malloc(strlen(name) + 1);
-    strcpy(new->name, name);
-    new->number = number;
-    new->next = NULL;
-
-    if (head == NULL) {
-        head = new;
-        return;
-    }
-    while (last_node->next != NULL) last_node = last_node->next;
-    last_node->next = new;
-}
 
 void commands(int connfd)
 {
@@ -137,10 +34,7 @@ void commands(int connfd)
         }
         printf("From client: %s\t", command);
         if (strcmp(command, "accedere") == 0) {
-            bzero(username, MAX);
             read(connfd, username, sizeof(username));
-
-            bzero(password, MAX);
             read(connfd, password, sizeof(password));
 
             User* user = findUser(username);
@@ -198,7 +92,7 @@ void commands(int connfd)
             read(connfd, buff, sizeof(buff));
             char* name = (char *) &buff;
             printf("Nome: %s\n", buff);
-            Contact* contact = delete(name);
+            Contact* contact = deleteContact(name);
             bzero(buff, MAX);
             if (contact == NULL) {
                 write(connfd, "Contatto non trovato", sizeof("Contatto non trovato"));
@@ -206,14 +100,7 @@ void commands(int connfd)
                 write(connfd, "Contatto trovato", sizeof("Contatto trovato"));
             }
         } else if (strcmp(command, "stampare") == 0) {
-            Contact* current = head;
-            while (current != NULL) {
-                char temp[MAX];
-                sprintf(temp, "Nome: %s - numero: %d", current->name, current->number);
-                strcat(buff, temp);
-                strcat(buff, "\n");
-                current = current->next;
-            }
+            printContact(buff);
             write(connfd, buff, sizeof(buff));
         } else if (strcmp(command, "modifica") == 0) {
             if (!authenticated) {
