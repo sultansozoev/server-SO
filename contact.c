@@ -7,19 +7,30 @@ Contact *contacts = NULL;
 
 void addContact(char* name, int number)
 {
-    Contact* new = (Contact*) malloc(sizeof(Contact));
-    Contact* last_node = contacts;
-    new->name = malloc(strlen(name) + 1);
-    strcpy(new->name, name);
-    new->number = number;
-    new->next = NULL;
-
-    if (contacts == NULL) {
-        contacts = new;
-        return;
+    Contact* newContact = (Contact*) malloc(sizeof(Contact));
+    if (!newContact) {
+        perror("Failed to allocate memory for newContact contact");
+        exit(EXIT_FAILURE);
     }
-    while (last_node->next != NULL) last_node = last_node->next;
-    last_node->next = new;
+
+    newContact->name = malloc(strlen(name) + 1);
+    if (!newContact->name) {
+        perror("Failed to allocate memory for contact name");
+        free(newContact);
+        exit(EXIT_FAILURE);
+    }
+
+    strcpy(newContact->name, name);
+    newContact->number = number;
+    newContact->next = NULL;
+
+    if (contacts == NULL)
+        contacts = newContact;
+    else {
+        Contact* last_node = contacts;
+        while (last_node->next != NULL) last_node = last_node->next;
+        last_node->next = newContact;
+    }
 }
 
 Contact* deleteContact(const char* name)
@@ -29,11 +40,10 @@ Contact* deleteContact(const char* name)
 
     while (current != NULL) {
         if (strcmp(current->name, name) == 0) {
-            if (previous == NULL) {
+            if (previous == NULL)
                 contacts = current->next;
-            } else {
+            else
                 previous->next = current->next;
-            }
             free(current);
             return current;
         }
@@ -47,15 +57,14 @@ Contact * findContact(char* name)
 {
     Contact* current = contacts;
     while (current != NULL) {
-        if (strcmp(name, current->name) == 0) {
+        if (strcmp(name, current->name) == 0)
             return current;
-        }
         current = current->next;
     }
     return NULL;
 }
 
-Contact* changeNumber(const char* name, int number)
+Contact* changeContactNumber(const char* name, int number)
 {
     Contact* current = contacts;
     while (current != NULL) {

@@ -1,7 +1,6 @@
 #ifndef CONTACT_H
-#define CONTACT_H 1
+#define CONTACT_H
 
-#include <stdlib.h>
 #define MAX 1024
 
 typedef struct Contact {
@@ -14,7 +13,7 @@ Contact *contacts;
 void addContact(char*, int);
 Contact* deleteContact(const char*);
 Contact* findContact(char*);
-Contact* changeNumber(const char*, int);
+Contact* changeContactNumber(const char*, int);
 void printContact(char *);
 
 #endif

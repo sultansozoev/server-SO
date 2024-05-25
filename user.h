@@ -1,7 +1,5 @@
 #ifndef USER_H
-#define USER_H 1
-
-#include <stdlib.h>
+#define USER_H
 
 typedef struct User {
     char* username;
