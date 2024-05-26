@@ -25,8 +25,8 @@ void processCommands(int connfd)
             printf("\nClient Exit...");
             break;
         }
-        printf("From client: %s\t", command);
-        if (strcmp(command, "accedi") == 0) {
+        printf("From client: %s\n", command);
+        if (strcmp(command, "login") == 0) {
             read(connfd, username, sizeof(username));
             read(connfd, password, sizeof(password));
 
@@ -40,7 +40,7 @@ void processCommands(int connfd)
                 write(connfd, "Authentication failed", sizeof("Authentication failed"));
                 continue;
             }
-        } else if (strcmp(command, "aggiungi") == 0) {
+        } else if (strcmp(command, "add") == 0) {
             if (!authenticated) {
                 write(connfd, "Authentication required", sizeof("Authentication required"));
                 continue;
@@ -55,14 +55,14 @@ void processCommands(int connfd)
             } else {
                 write(connfd, "Contact available", sizeof("Contact available"));
             }
-            printf("\nNome: %s", buff);
+            printf("\nName: %s", buff);
             read(connfd, buffN, sizeof(buffN));
-            printf("\nNumero: %s\n", buffN);
+            printf("\nNumber: %s\n", buffN);
             char* number = buffN;
             addContact(name, number);
             bzero(buff, MAX);
             bzero(buffN, MAX);
-        } else if (strcmp(command, "registrati") == 0) {
+        } else if (strcmp(command, "register") == 0) {
             bzero(username, MAX);
             read(connfd, username, sizeof(username));
             bzero(password, MAX);
@@ -76,7 +76,7 @@ void processCommands(int connfd)
             addUser(username, password);
             printf("User registered successfully\n");
             write(connfd, "User registered successfully", sizeof("User registered successfully"));
-        } else if (strcmp(command, "elimina") == 0) {
+        } else if (strcmp(command, "delete") == 0) {
             if (!authenticated) {
                 write(connfd, "Authentication required", sizeof("Authentication required"));
                 continue;
@@ -84,18 +84,18 @@ void processCommands(int connfd)
             write(connfd, "User authenticated", sizeof("User authenticated"));
             read(connfd, buff, sizeof(buff));
             char* name = (char *) &buff;
-            printf("Nome: %s\n", buff);
+            printf("Name: %s\n", buff);
             Contact* contact = deleteContact(name);
             bzero(buff, MAX);
             if (contact == NULL) {
-                write(connfd, "Contatto non trovato", sizeof("Contatto non trovato"));
+                write(connfd, "Contact not found", sizeof("Contact not found"));
             } else {
-                write(connfd, "Contatto trovato", sizeof("Contatto trovato"));
+                write(connfd, "Contact deleted", sizeof("Contact deleted"));
             }
-        } else if (strcmp(command, "stampa") == 0) {
+        } else if (strcmp(command, "print") == 0) {
             printContact(buff);
             write(connfd, buff, sizeof(buff));
-        } else if (strcmp(command, "modifica") == 0) {
+        } else if (strcmp(command, "modify") == 0) {
             if (!authenticated) {
                 write(connfd, "Authentication required", sizeof("Authentication required"));
                 continue;
@@ -103,16 +103,16 @@ void processCommands(int connfd)
             write(connfd, "User authenticated", sizeof("User authenticated"));
             read(connfd, buff, sizeof(buff));
             char *name = (char *) &buff;
-            printf("Nome: %s\n", buff);
+            printf("Name: %s\n", buff);
             read(connfd, buffN, sizeof(buffN));
             char* number = buffN;
             Contact* contact = changeContactNumber(name, number);
             if (contact == NULL) {
-                write(connfd, "Contatto non trovato", sizeof("Contatto non trovato"));
+                write(connfd, "Contact not found", sizeof("Contact not found"));
             } else {
-                write(connfd, "Contatto trovato", sizeof("Contatto trovato"));
+                write(connfd, "Contact modified", sizeof("Contact modified"));
             }
-        } else if (strcmp(command, "chiudi") == 0) {
+        } else if (strcmp(command, "close") == 0) {
             printf("\nClient Exit...\n");
             break;
         }

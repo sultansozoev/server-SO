@@ -35,13 +35,13 @@ Questo progetto è un semplice server TCP multi-thread scritto in C che supporta
    ./server
    ```
 2. Comandi dei Client:
-   * `accedi`: Effettua il login con nome utente e password;
-   * `registrati`: Registra un nuovo utente con nome utente e password;
-   * `aggiungi`: Aggiunge un nuovo contatto (richiede autenticazione);
-   * `elimina`: Elimina un contatto per nome (richiede autenticazione);
-   * `modifica`: Modifica il numero di telefono di un contatto esistente (richiede autenticazione);
-   * `stampa`: Elenca tutti i contatti;
-   * `chiudi`: Chiudi la connessione con il server.
+   * `login`: Effettua il login con nome utente e password;
+   * `register`: Registra un nuovo utente con nome utente e password;
+   * `add`: Aggiunge un nuovo contatto (richiede autenticazione);
+   * `delete`: Elimina un contatto per nome (richiede autenticazione);
+   * `modify`: Modifica il numero di telefono di un contatto esistente (richiede autenticazione);
+   * `print`: Elenca tutti i contatti;
+   * `close`: Chiudi la connessione con il server.
 
 ### Pulizia
 Per eliminare i file .o e l'eseguibile, esegui il comando:
