@@ -1,4 +1,4 @@
-#include "server.h"
+#include "../include/server.h"
 
 #define MAX 1024
 #define PORT 8080

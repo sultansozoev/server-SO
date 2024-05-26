@@ -1,4 +1,4 @@
-#include "user.h"
+#include "../include/user.h"
 
 #include <stdlib.h>
 #include <string.h>

@@ -1,6 +1,6 @@
-#include "commands.h"
-#include "user.h"
-#include "contact.h"
+#include "../include/commands.h"
+#include "../include/user.h"
+#include "../include/contact.h"
 
 #include <stdio.h>
 #include <string.h>

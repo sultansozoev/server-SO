@@ -1,5 +1,5 @@
-#include "server.h"
-#include "commands.h"
+#include "../include/server.h"
+#include "../include/commands.h"
 
 #include <stdio.h>
 #include <netinet/in.h>

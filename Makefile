@@ -1,28 +1,25 @@
 CC = gcc
-CFLAGS = -pthread
+CFLAGS = -I./include -pthread
 TARGET = server
 
-OBJS = main.o server.o commands.o user.o contact.o
+SRCDIR = src
+OBJDIR = obj
+INCLUDEDIR = include
+
+SRCS = $(wildcard $(SRCDIR)/*.c)
+OBJS = $(SRCS:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS)
-	$(CC) -o $(TARGET) $(OBJS) $(CFLAGS)
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
-main.o: main.c server.h
-	$(CC) -c main.c
+$(TARGET): $(OBJDIR) $(OBJS)
+	$(CC) -o $@ $(OBJS) $(CFLAGS)
 
-server.o: server.c server.h commands.h
-	$(CC) -c server.c
-
-commands.o: commands.c commands.h user.h contact.h
-	$(CC) -c commands.c
-
-users.o: user.c user.h
-	$(CC) -c users.c
-
-contacts.o: contact.c contact.h
-	$(CC) -c contacts.c
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(TARGET) $(OBJS)
+	rm -rf $(OBJDIR)
