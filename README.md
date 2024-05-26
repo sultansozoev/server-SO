@@ -3,6 +3,7 @@
 ### Descrizione
 
 Questo progetto è un semplice server TCP multi-thread scritto in C che supporta l'autenticazione degli utenti e la gestione dei contatti. Il server permette ai client di registrarsi, effettuare il login e gestire una lista di contatti (aggiungere, eliminare, modificare e visualizzare i contatti).
+[Il client da utilizzare.](https://github.com/sultansozoev/client-SO)
 
 ### Funzionalità
 
@@ -24,7 +25,7 @@ Questo progetto è un semplice server TCP multi-thread scritto in C che supporta
    ```bash
    make
    ```
-   E poi utilizza il comando seguente:
+   oppure utilizza il comando seguente
    ```bash
    gcc -o server src/main.c src/server.c src/commands.c src/user.c src/contact.c -I./include -pthread
    ```

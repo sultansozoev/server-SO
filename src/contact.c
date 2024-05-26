@@ -77,15 +77,3 @@ Contact* changeContactNumber(const char* name, char* number)
     }
     return NULL;
 }
-
-void printContact(char* buff)
-{
-    Contact* current = contacts;
-    while (current != NULL) {
-        char temp[MAX];
-        sprintf(temp, "Name: %s - number: %s", current->name, current->number);
-        strcat(buff, temp);
-        strcat(buff, "\n");
-        current = current->next;
-    }
-}

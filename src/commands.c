@@ -5,116 +5,190 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
-void processCommands(int connfd)
-{
-    char username[MAX];
-    char password[MAX];
+void writeString(int connfd, const char* str) {
+    int length = (int) strlen(str);
+    if (write(connfd, &length, sizeof(length)) != sizeof(length)) {
+        perror("Failed to write length");
+    }
+    if (write(connfd, str, length) != length) {
+        perror("Failed to write string");
+    }
+}
+
+char* readString(int connfd) {
+    int length;
+    if (read(connfd, &length, sizeof(length)) != sizeof(length)) {
+        perror("Failed to read length");
+        return NULL;
+    }
+    char* buffer = (char*)malloc(length + 1);
+    if (buffer == NULL) {
+        perror("Failed to allocate memory");
+        return NULL;
+    }
+    if (read(connfd, buffer, length) != length) {
+        perror("Failed to read string");
+        free(buffer);
+        return NULL;
+    }
+    buffer[length] = '\0';
+    return buffer;
+}
+
+void processCommands(int connfd) {
     int authenticated = 0;
 
     while (1) {
-        char command[MAX];
-        char buff[MAX];
-        char buffN[MAX];
-        bzero(command, MAX);
-        bzero(buff, MAX);
-        bzero(buffN, MAX);
-        read(connfd, command, sizeof(buff));
-
+        char* command = readString(connfd);
+        if (command == NULL) {
+            break;
+        }
         if (command[0] == 0) {
-            printf("\nClient Exit...");
+            printf("\nClient Exit...\n");
+            free(command);
             break;
         }
         printf("From client: %s\n", command);
+
         if (strcmp(command, "login") == 0) {
-            read(connfd, username, sizeof(username));
-            read(connfd, password, sizeof(password));
+            char* username = readString(connfd);
+            char* password = readString(connfd);
+            if (username == NULL || password == NULL) {
+                writeString(connfd, "Error reading login credentials");
+                free(command);
+                free(username);
+                free(password);
+                continue;
+            }
 
             User* user = findUser(username);
             if (user != NULL && strcmp(password, user->password) == 0) {
                 authenticated = 1;
                 printf("%s authenticated successfully\n", username);
-                write(connfd, "User authenticated successfully", sizeof("User authenticated successfully"));
+                writeString(connfd, "User authenticated successfully");
             } else {
                 printf("Authentication failed for client\n");
-                write(connfd, "Authentication failed", sizeof("Authentication failed"));
-                continue;
+                writeString(connfd, "Authentication failed");
             }
+            free(username);
+            free(password);
         } else if (strcmp(command, "add") == 0) {
             if (!authenticated) {
-                write(connfd, "Authentication required", sizeof("Authentication required"));
+                writeString(connfd, "Authentication required");
+                free(command);
                 continue;
             }
-            write(connfd, "User authenticated", sizeof("User authenticated"));
-            read(connfd, buff, sizeof(buff));
-            char* name = (char *) &buff;
+            writeString(connfd, "User authenticated");
+
+            char* name = readString(connfd);
+            if (name == NULL) {
+                writeString(connfd, "Error reading name");
+                free(command);
+                continue;
+            }
+
             if (findContact(name) != NULL) {
                 printf("Contact already exists\n");
-                write(connfd, "Contact already exists", sizeof("Contact already exists"));
-                continue;
+                writeString(connfd, "Contact already exists");
             } else {
-                write(connfd, "Contact available", sizeof("Contact available"));
+                writeString(connfd, "Contact available");
+                char* number = readString(connfd);
+                if (number == NULL) {
+                    writeString(connfd, "Error reading number");
+                    free(name);
+                    free(command);
+                    continue;
+                }
+                printf("Name: %s\nNumber: %s\n", name, number);
+                addContact(name, number);
+                free(number);
             }
-            printf("\nName: %s", buff);
-            read(connfd, buffN, sizeof(buffN));
-            printf("\nNumber: %s\n", buffN);
-            char* number = buffN;
-            addContact(name, number);
-            bzero(buff, MAX);
-            bzero(buffN, MAX);
+            free(name);
         } else if (strcmp(command, "register") == 0) {
-            bzero(username, MAX);
-            read(connfd, username, sizeof(username));
-            bzero(password, MAX);
-            read(connfd, password, sizeof(password));
+            char* username = readString(connfd);
+            char* password = readString(connfd);
+            if (username == NULL || password == NULL) {
+                writeString(connfd, "Error reading registration credentials");
+                free(command);
+                free(username);
+                free(password);
+                continue;
+            }
 
             if (findUser(username) != NULL) {
                 printf("Username already exists\n");
-                write(connfd, "Username already exists", sizeof("Username already exists"));
-                continue;
+                writeString(connfd, "Username already exists");
+            } else {
+                addUser(username, password);
+                printf("User registered successfully\n");
+                writeString(connfd, "User registered successfully");
             }
-            addUser(username, password);
-            printf("User registered successfully\n");
-            write(connfd, "User registered successfully", sizeof("User registered successfully"));
+            free(username);
+            free(password);
         } else if (strcmp(command, "delete") == 0) {
             if (!authenticated) {
-                write(connfd, "Authentication required", sizeof("Authentication required"));
+                writeString(connfd, "Authentication required");
+                free(command);
                 continue;
             }
-            write(connfd, "User authenticated", sizeof("User authenticated"));
-            read(connfd, buff, sizeof(buff));
-            char* name = (char *) &buff;
-            printf("Name: %s\n", buff);
-            Contact* contact = deleteContact(name);
-            bzero(buff, MAX);
-            if (contact == NULL) {
-                write(connfd, "Contact not found", sizeof("Contact not found"));
-            } else {
-                write(connfd, "Contact deleted", sizeof("Contact deleted"));
+            writeString(connfd, "User authenticated");
+            char* name = readString(connfd);
+            if (name == NULL) {
+                writeString(connfd, "Error reading name");
+                free(command);
+                continue;
             }
+            printf("Name: %s\n", name);
+            Contact* contact = deleteContact(name);
+            if (contact == NULL) {
+                writeString(connfd, "Contact not found");
+            } else {
+                writeString(connfd, "Contact deleted");
+            }
+            free(name);
         } else if (strcmp(command, "print") == 0) {
-            printContact(buff);
-            write(connfd, buff, sizeof(buff));
+            char buff[MAX] = "";
+            Contact* current = contacts;
+            while (current != NULL) {
+                char temp[MAX];
+                sprintf(temp, "Name: %s - number: %s", current->name, current->number);
+                strcat(buff, temp);
+                strcat(buff, "\n");
+                current = current->next;
+            }
+            writeString(connfd, buff);
         } else if (strcmp(command, "modify") == 0) {
             if (!authenticated) {
-                write(connfd, "Authentication required", sizeof("Authentication required"));
+                writeString(connfd, "Authentication required");
+                free(command);
                 continue;
             }
-            write(connfd, "User authenticated", sizeof("User authenticated"));
-            read(connfd, buff, sizeof(buff));
-            char *name = (char *) &buff;
-            printf("Name: %s\n", buff);
-            read(connfd, buffN, sizeof(buffN));
-            char* number = buffN;
+            writeString(connfd, "User authenticated");
+            char* name = readString(connfd);
+            char* number = readString(connfd);
+            if (name == NULL || number == NULL) {
+                writeString(connfd, "Error reading name or number");
+                free(name);
+                free(number);
+                free(command);
+                continue;
+            }
+            printf("Name: %s\nNumber: %s\n", name, number);
             Contact* contact = changeContactNumber(name, number);
             if (contact == NULL) {
-                write(connfd, "Contact not found", sizeof("Contact not found"));
+                writeString(connfd, "Contact not found");
             } else {
-                write(connfd, "Contact modified", sizeof("Contact modified"));
+                writeString(connfd, "Contact modified");
             }
+            free(name);
+            free(number);
         } else if (strcmp(command, "close") == 0) {
             printf("\nClient Exit...\n");
+            free(command);
             break;
         }
+        free(command);
     }
 }
