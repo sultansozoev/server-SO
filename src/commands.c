@@ -39,7 +39,8 @@ char* readString(int connfd) {
 
 void processCommands(int connfd) {
     int authenticated = 0;
-
+    char* username = NULL;
+    char* password = NULL;
     while (1) {
         char* command = readString(connfd);
         if (command == NULL) {
@@ -50,11 +51,14 @@ void processCommands(int connfd) {
             free(command);
             break;
         }
-        printf("From client: %s\n", command);
+        if (username)
+            printf("From client %s: %s\n", username, command);
+        else
+            printf("From client: %s\n", command);
 
         if (strcmp(command, "login") == 0) {
-            char* username = readString(connfd);
-            char* password = readString(connfd);
+            username = readString(connfd);
+            password = readString(connfd);
             if (username == NULL || password == NULL) {
                 writeString(connfd, "Error reading login credentials");
                 free(command);
@@ -72,7 +76,6 @@ void processCommands(int connfd) {
                 printf("Authentication failed for client\n");
                 writeString(connfd, "Authentication failed");
             }
-            free(username);
             free(password);
         } else if (strcmp(command, "add") == 0) {
             if (!authenticated) {
@@ -107,8 +110,8 @@ void processCommands(int connfd) {
             }
             free(name);
         } else if (strcmp(command, "register") == 0) {
-            char* username = readString(connfd);
-            char* password = readString(connfd);
+            username = readString(connfd);
+            password = readString(connfd);
             if (username == NULL || password == NULL) {
                 writeString(connfd, "Error reading registration credentials");
                 free(command);
@@ -144,8 +147,10 @@ void processCommands(int connfd) {
             Contact* contact = deleteContact(name);
             if (contact == NULL) {
                 writeString(connfd, "Contact not found");
+                printf("Contact not found\n");
             } else {
                 writeString(connfd, "Contact deleted");
+                printf("Contact deleted\n");
             }
             free(name);
         } else if (strcmp(command, "print") == 0) {
@@ -179,8 +184,10 @@ void processCommands(int connfd) {
             Contact* contact = changeContactNumber(name, number);
             if (contact == NULL) {
                 writeString(connfd, "Contact not found");
+                printf("Contact not found\n");
             } else {
                 writeString(connfd, "Contact modified");
+                printf("Contact modified\n");
             }
             free(name);
             free(number);
