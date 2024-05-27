@@ -7,6 +7,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+/**
+ * @brief Write a string to the client, dynamically allocated memory for the string
+ * @param connfd The connection file descriptor
+ * @param str  The string to write
+ */
+
 void writeString(int connfd, const char* str) {
     int length = (int) strlen(str);
     if (write(connfd, &length, sizeof(length)) != sizeof(length)) {
@@ -16,6 +22,12 @@ void writeString(int connfd, const char* str) {
         perror("Failed to write string");
     }
 }
+
+/**
+ * @brief Read a string from the client
+ * @param connfd The connection file descriptor
+ * @return The string read from the client, dynamically allocated memory for the string
+ */
 
 char* readString(int connfd) {
     int length;
