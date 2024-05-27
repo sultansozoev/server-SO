@@ -6,7 +6,7 @@ typedef struct Contact {
     char* name;
     struct Contact* next;
 } Contact;
-Contact *contacts;
+extern Contact *contacts;
 
 void addContact(char*, char*);
 Contact* deleteContact(const char*);
